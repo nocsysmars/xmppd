@@ -1,0 +1,5 @@
+#!/bin/bash
+
+systemctl enable xmppd.service
+
+systemctl start xmppd.service
