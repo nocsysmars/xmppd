@@ -9,12 +9,27 @@ from xml.etree import cElementTree as ET
 
 TMP_ACL_FILE        = '/tmp/set-ip-acl.json'
 CFG_TMPL_UPD_ACL    = 'config acl update full {filename}'
-CFG_TMPL_BIND_ACL   = 'config acl add table {aclname} L3 --ports "{inflist}" --stage {stage}'
-CFG_TMPL_UNBIND_ACL = 'config acl remove table {aclname}'
+
+CFG_TMPL_BIND_ACL_EC    = 'config acl add table {aclname} L3 --ports "{inflist}" --stage {stage}'
+CFG_TMPL_UNBIND_ACL_EC  = 'config acl remove table {aclname}'
 
 # for bcm
-#CFG_TMPL_BIND_ACL   = 'config acl table add {aclname} L3 --ports "{inflist}" --stage {stage}'
-#CFG_TMPL_UNBIND_ACL = 'config acl table delete {aclname}'
+CFG_TMPL_BIND_ACL_BCM   = 'config acl table add {aclname} L3 --ports "{inflist}" --stage {stage}'
+CFG_TMPL_UNBIND_ACL_BCM = 'config acl table delete {aclname}'
+
+CFG_TMPL_BIND_ACL   = CFG_TMPL_BIND_ACL_EC
+CFG_TMPL_UNBIND_ACL = CFG_TMPL_UNBIND_ACL_EC
+
+# setup the correct command according to the cfg
+def acl_cfg_ready_cb(cfg_tbl):
+    global CFG_TMPL_BIND_ACL, CFG_TMPL_UNBIND_ACL
+
+    if cfg_tbl["IS_EC"] == 1:
+        CFG_TMPL_BIND_ACL   = CFG_TMPL_BIND_ACL_EC
+        CFG_TMPL_UNBIND_ACL = CFG_TMPL_UNBIND_ACL_EC
+    else:
+        CFG_TMPL_BIND_ACL   = CFG_TMPL_BIND_ACL_BCM
+        CFG_TMPL_UNBIND_ACL = CFG_TMPL_UNBIND_ACL_BCM
 
 #
 # set functions
@@ -79,3 +94,8 @@ def acl_update(ent_elm, db_args):
 util_method_tbl.mtbl_register_method('bind-acl',   acl_bind)
 util_method_tbl.mtbl_register_method('unbind-acl', acl_unbind)
 util_method_tbl.mtbl_register_method('update-acl', acl_update)
+
+#
+# register cb function for CFG_TBL
+#
+util_utl.utl_register_cb_cfg_ready(acl_cfg_ready_cb)

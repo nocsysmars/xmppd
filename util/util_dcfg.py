@@ -9,7 +9,7 @@ from xml.etree import cElementTree as ET
 
 CFG_TMPL_HOSTNAME_CMD = "config hostname {new_host}"
 CFG_TMPL_DATE_CMD     = "date -s '{new_date_time}'"
-
+CFG_TMPL_REBOOT_CMD   = "reboot"
 
 #
 # set functions
@@ -41,6 +41,17 @@ def dcfg_default_cfg(ent_elm, db_args):
     if is_date_ok and is_host_ok:
         util_method_tbl.mtbl_append_retmsg(ent_elm, "SUCCESS")
 
+@util_utl.utl_dbg
+def dcfg_reboot(ent_elm, db_args):
+    # send msg back then reboot next round
+    db_args.is_reboot = True
+    util_method_tbl.mtbl_append_retmsg(ent_elm, "Reboot starts...")
+
+
+def dcfg_reboot_nr(ent_elm, db_args):
+    exe_cmd = CFG_TMPL_REBOOT_CMD
+    util_utl.utl_execute_cmd(exe_cmd)
+
 #
 # get functions 
 #
@@ -50,3 +61,5 @@ def dcfg_default_cfg(ent_elm, db_args):
 # register related functions to method table
 #
 util_method_tbl.mtbl_register_method('default-cfg', dcfg_default_cfg)
+util_method_tbl.mtbl_register_method('reboot',      dcfg_reboot)
+util_method_tbl.mtbl_register_method('reboot-nr',   dcfg_reboot_nr)

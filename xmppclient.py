@@ -44,7 +44,10 @@ class XmppClient(ClientXMPP):
         self.db_args.cntrdb = util_db.db_connect_by_name('COUNTER')
         #self.db_args.asicdb = db_connect_by_name('ASIC')
         self.db_args.statdb = util_db.db_connect_by_name('STATE')
-        self.db_args.cfgdb = util_db.db_connect_by_name('CFG')
+        self.db_args.cfgdb  = util_db.db_connect_by_name('CFG')
+
+        # flag to execute reboot
+        self.db_args.is_reboot = False
 
         self.peri_cb = peri_cb
 
@@ -134,6 +137,11 @@ class XmppClient(ClientXMPP):
 
         # send result
         self.send_result(ent_elm)
+
+        if self.db_args.is_reboot:
+            time.sleep(2)
+            self.db_args.is_reboot = False
+            util_method_tbl.mtbl_execute_method('reboot-nr', ent_elm, self.db_args)
 
     def send_result(self, ent_elm):
         msg = self.Message(sto=self.boundjid.host, stype='chat', sfrom=self.client_jid)

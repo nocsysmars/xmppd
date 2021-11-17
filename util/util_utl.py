@@ -65,8 +65,11 @@ CFG_TBL = {
     "CTRLER_PORT"       : 5269,
     "JID_SERVER"        : "xmpp.onosproject.org",
     "JID_DOMAIN"        : "edgecore.com",
-    "CFG_PATH"          : None
+    "CFG_PATH"          : None,
+    "IS_EC"             : 1,
 }
+
+CFG_READY_CB_TBL = []
 
 def utl_is_flag_on(flg_name):
     return flg_name in DBG_FLG_TBL and DBG_FLG_TBL[flg_name] > 0
@@ -189,6 +192,16 @@ def utl_build_xml_item(info, root_tag = 'entry'):
 
     return root_et
 
+# register callback function for config ready event
+def utl_register_cb_cfg_ready(cbf):
+    if cbf not in CFG_READY_CB_TBL:
+        CFG_READY_CB_TBL.append(cbf)
+
+# notify config ready event
+def utl_notify_cfg_ready():
+    for cbf in CFG_READY_CB_TBL:
+        cbf(CFG_TBL)
+
 def utl_setup_cfg(daemon_flag):
     cfg_path = ['./misc/', CFG_DIR] [daemon_flag] + CFG_FILE
     CFG_TBL["CFG_PATH"] = cfg_path
@@ -202,6 +215,7 @@ def utl_setup_cfg(daemon_flag):
                  { "fld" : "CTRLER_PORT",     "tag" : "controller_port", "type" : "int" },
                  { "fld" : "JID_DOMAIN",      "tag" : "jid_domain"                      },
                  { "fld" : "JID_SERVER",      "tag" : "jid_server"                      },
+                 { "fld" : "IS_EC",           "tag" : "is_ec",           "type" : "int" },
     ]
 
     for cmap in cmap_tbl:
@@ -210,6 +224,8 @@ def utl_setup_cfg(daemon_flag):
                 CFG_TBL[cmap["fld"]] = int(cfg.get(CFG_SECT_GEN, cmap["tag"]))
             else:
                 CFG_TBL[cmap["fld"]] = cfg.get(CFG_SECT_GEN, cmap["tag"])
+
+    utl_notify_cfg_ready()
 
 def utl_setup_log(daemon_flag, debug_flag):
     log_path = ['./', LOG_DIR] [daemon_flag] + LOG_FILE
