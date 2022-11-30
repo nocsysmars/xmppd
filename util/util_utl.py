@@ -84,7 +84,7 @@ def utl_log(str, lvl = logging.DEBUG, c_lvl=1):
         my_logger = logging.getLogger()
         if lvl < my_logger.getEffectiveLevel(): return
         rec = my_logger.makeRecord(
-            'gnmi_svr',
+            'xmppd',
             lvl,
             os.path.basename(f1.f_code.co_filename),
             f1.f_lineno,
