@@ -4,9 +4,8 @@
 # fdb related APIs.
 #
 
-import util_utl, util_method_tbl, pdb
 from xml.etree import cElementTree as ET
-
+from . import util_utl, util_method_tbl
 
 #
 # set functions

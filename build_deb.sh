@@ -5,7 +5,7 @@ PKG_VER=`sed -n -e "s/ *version *= *['\"]\([^']*\)['\"][ ]*,/\1/p" misc/setup.py
 
 cd build
 
-python setup.py --command-packages=stdeb.command debianize
+python3 setup.py --command-packages=stdeb.command debianize
 
 tar czvf ../${PKG_NAM}_${PKG_VER}.orig.tar.gz .
 

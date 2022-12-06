@@ -4,7 +4,8 @@
 # APIs for processing platform info.
 #
 
-import subprocess, json, re, pdb, util_utl
+import subprocess, json, re, pdb
+from . import util_utl
 
 # ex: get "571254X1625041" from 
 #         "Serial Number        0x23  14 571254X1625041"

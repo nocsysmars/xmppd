@@ -4,8 +4,8 @@
 # port mirror related APIs.
 #
 
-import util_utl, util_method_tbl, pdb
 from xml.etree import cElementTree as ET
+from . import util_utl, util_method_tbl
 
 CFG_TMPL_MIRROR_SPAN_ADD_EC  = "config mirror_session span add {sess_name}" \
                                " {dst_port} {src_port} {mode}"

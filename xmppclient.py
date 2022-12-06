@@ -1,8 +1,12 @@
 import time, logging, pdb, uuid
 from sleekxmpp import ClientXMPP, XMLStream, Iq, StanzaPath, Callback
 from xml.etree import cElementTree as ET
-from util import *
 
+if __package__:
+    # from systemd
+    from .util import *
+else:
+    from util import *
 
 class MyArgs: pass
 

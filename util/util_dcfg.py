@@ -4,8 +4,8 @@
 # default config related APIs.
 #
 
-import util_utl, util_method_tbl, pdb
 from xml.etree import cElementTree as ET
+from . import util_utl, util_method_tbl
 
 CFG_TMPL_HOSTNAME_CMD = "config hostname {new_host}"
 CFG_TMPL_DATE_CMD     = "date -s '{new_date_time}'"

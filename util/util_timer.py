@@ -4,9 +4,8 @@
 # timer related APIs.
 #
 
-import util_utl, util_method_tbl, pdb
 from collections import deque
-
+from . import util_utl, util_method_tbl
 
 # { "interval"  :
 #   "cb_f"      :

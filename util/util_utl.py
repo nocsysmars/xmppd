@@ -5,7 +5,7 @@
 #
 
 import subprocess, json, logging, logging.handlers, inspect
-import sys, os, time, functools, ConfigParser
+import sys, os, time, functools, configparser
 from xml.etree import cElementTree as ET
 
 CFGDB_TABLE_NAME_ACL            = 'ACL_TABLE'
@@ -155,7 +155,7 @@ def utl_get_execute_cmd_output(exe_cmd):
         utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[2][3]), logging.ERROR)
         return (False, None)
 
-    return (True, output)
+    return (True, output.decode('utf-8'))
 
 # decorator to print debug info
 def utl_dbg(f):
@@ -205,7 +205,7 @@ def utl_notify_cfg_ready():
 def utl_setup_cfg(daemon_flag):
     cfg_path = ['./misc/', CFG_DIR] [daemon_flag] + CFG_FILE
     CFG_TBL["CFG_PATH"] = cfg_path
-    cfg = ConfigParser.RawConfigParser()
+    cfg = configparser.RawConfigParser()
     cfg.read(cfg_path)
 
     cmap_tbl = [ { "fld" : "FAKE_DATA",       "tag" : "fake_data",       "type" : "int" },

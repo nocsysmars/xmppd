@@ -4,8 +4,8 @@
 # acl related APIs.
 #
 
-import util_utl, util_method_tbl, pdb
 from xml.etree import cElementTree as ET
+from . import util_utl, util_method_tbl
 
 TMP_ACL_FILE        = '/tmp/set-ip-acl.json'
 CFG_TMPL_UPD_ACL    = 'config acl update full {filename}'

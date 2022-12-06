@@ -4,8 +4,8 @@
 # vlan related APIs.
 #
 
-import util_utl, util_method_tbl, pdb
 from xml.etree import cElementTree as ET
+from . import util_utl, util_method_tbl
 
 CFG_TMPL_VLAN_CMD     = "config vlan {action} {vid}"
 CFG_TMPL_VLAN_MBR_CMD = "config vlan member {action} {tag_mode} {vid} {inf_name}"

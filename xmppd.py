@@ -1,9 +1,13 @@
-import time, logging, argparse, sys, os, socket, signal
-
-from xmppclient import XmppClient
-from util import util_utl, util_timer
+import time, logging, argparse, sys, os, socket, signal, pdb
 from sleekxmpp import ClientXMPP, XMLStream, Iq
 
+if __package__:
+    # from systemd
+    from .xmppclient import XmppClient
+    from .util import util_utl, util_timer
+else:
+    from xmppclient import XmppClient
+    from util import util_utl, util_timer
 
 class XmppDaemon():
 

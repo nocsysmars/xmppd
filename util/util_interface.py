@@ -4,8 +4,9 @@
 # APIs related to interface.
 #
 
-import subprocess, json, pdb, time, re, util_utl, util_method_tbl
+import subprocess, json, pdb, time, re
 from xml.etree import cElementTree as ET
+from . import util_utl, util_method_tbl
 
 FILL_INFO_NONE  = 0     # fill no info
 FILL_INFO_NAME  = 0x01  # fill name info
