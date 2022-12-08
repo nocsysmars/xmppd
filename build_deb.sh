@@ -9,6 +9,6 @@ python3 setup.py --command-packages=stdeb.command debianize
 
 tar czvf ../${PKG_NAM}_${PKG_VER}.orig.tar.gz .
 
-cp postinst debian/python-${PKG_NAM}.postinst
+cp postinst debian/python3-${PKG_NAM}.postinst
 
 dpkg-buildpackage
