@@ -3,7 +3,7 @@ Steps to install xmppd on DUT
 - On Linux server
 ```
   1. apt-get install python3-stdeb (build-essential python3-all dh-python, etc...)
-  2. git clone https://github.com/SquidRo/xmppd
+  2. git clone https://github.com/nocsysmars/xmppd
   3. cd xmppd; ./build_deb.sh
   4. copy output python3-xmppd_0.1-1_all.deb to DUT
 ```

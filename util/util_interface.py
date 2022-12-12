@@ -48,11 +48,27 @@ COUNTERS_QUEUE_INDEX_MAP = "COUNTERS_QUEUE_INDEX_MAP"   # queue oid / queue idx
 COUNTERS_QUEUE_TYPE_MAP  = "COUNTERS_QUEUE_TYPE_MAP"    # queue oid / queue type
 
 # for ec only
-CFG_TMPL_RLIMIT_PROFILE  = "config qos scheduler {act} {profile}" \
-                           " --meter_type {mode} --pir {pir} --pbs {pbs}"
-CFG_TMPL_BIND_RLIMIT     = "config interface rate-limit {act} {direction} {infname} {profile}"
 
-CFG_TMPL_PROFILE_FMT     = "{infname}_{stage}_P"
+#  egress ratelimit
+#  act: add/del, on opt for del
+# mode: bytes/packets
+#   ex: config scheduler add 400m_shaping --shaper_type bytes --bandwidth 400m
+CFG_TMPL_SHAPER_PF    = "config scheduler {act} {profile}"
+CFG_TMPL_SHAPER_PF_OPT= " --shaper_type {mode} --bandwidth {bw}"
+
+#  act: bind/unbind, no profile for unbind
+# mode: port/queue
+#   ex: config interface scheduler bind port Ethernet5 400m_shaping
+CFG_TMPL_BIND_SHAPER_EG  = "config interface scheduler {act} {mode} {ifname} {profile}"
+
+CFG_TMPL_SHAPER_PF_FMT   = "{ifname}_{stage}_P"
+
+# ingress ratelimit
+#  act: add/del, no opt for del
+# mode: bytes/packets
+#   ex: config interface rate-limit add Ethernet1 --meter-type bytes --rate 10000
+CFG_TMPL_BIND_RLIMIT_IN    = "config interface rate-limit {act} {ifname}"
+CFG_TMPL_BIND_RLIMIT_IN_OPT= " --meter-type {mode} --rate {rate}"
 
 # ex: portq_to_oid['Ethernet1'][4] : oid:0x150000000000e4
 portq_to_oid   = {}
@@ -61,38 +77,81 @@ portq_to_oid   = {}
 #
 # set functions
 #
-def interface_get_rl_pfname(inf_name, stage):
-    stage_str = ['EG', 'IN'] [ stage == 'ingress' ]
-    pf_name = CFG_TMPL_PROFILE_FMT.format(infname = inf_name, stage = stage_str)
+def interface_get_rl_pfname(in_ifname, in_stage):
+    stage_str = ['EG', 'IN'] [ in_stage == 'ingress' ]
+    pf_name = CFG_TMPL_SHAPER_PF_FMT.format(ifname=in_ifname, stage=stage_str)
     return pf_name
 
-def interface_set_rl_profile(ent_elm, pf_name, action, rate):
+def interface_set_rl_profile(ent_elm, in_pfname, in_action, in_rate):
     # mode : 'bytes' or 'packets'
-    exe_cmd = CFG_TMPL_RLIMIT_PROFILE.format(
-                act=action, profile=pf_name, mode='bytes', pir=rate, pbs=8192)
+    exe_cmd = CFG_TMPL_SHAPER_PF.format(
+                act=in_action, profile=in_pfname)
+
+    if in_action == 'add':
+        exe_cmd = exe_cmd + CFG_TMPL_SHAPER_PF_OPT.format(mode='bytes', bw=in_rate)
 
     exe_ok = util_utl.utl_execute_cmd(exe_cmd)
     if not exe_ok:
         util_method_tbl.mtbl_append_retmsg(ent_elm,
             "Failed to {act} rl profile {profile}.".format(
-                act=action, profile=pf_name))
+                act=in_action, profile=in_pfname))
 
     return exe_ok
 
-def interface_bind_rl_profile(ent_elm, inf_name, pf_name, action, direction):
-    exe_cmd = CFG_TMPL_BIND_RLIMIT.format(
-                act=action, direction=direction, infname=inf_name, profile=pf_name)
+# for egress ratelimit
+def interface_bind_rl_profile(ent_elm, in_ifname, in_pfname, in_action):
+
+    if in_action == 'unbind':
+        in_pfname = ""
+
+    exe_cmd = CFG_TMPL_BIND_SHAPER_EG.format(
+                act=in_action, mode='port', ifname=in_ifname, profile=in_pfname)
 
     exe_ok = util_utl.utl_execute_cmd(exe_cmd)
     if not exe_ok:
         util_method_tbl.mtbl_append_retmsg(ent_elm,
-            "Failed to {act} {dir} {profile}.".format(
-                act=action, dir=direction, profile=pf_name))
+            "Failed to {act} egress {profile}.".format(
+                act=in_action, profile=in_pfname))
+
+    return exe_ok
+
+def interface_set_egress_ratelimit(ent_elm, in_ifname, in_action, in_rate):
+    egr_pfname = interface_get_rl_pfname(in_ifname, 'egress')
+
+    if in_action == 'add':
+        # create shaper profile
+        # bind profile to interface
+        is_eg_ok = interface_set_rl_profile(ent_elm, egr_pfname, 'add', in_rate)
+        is_eg_ok = interface_bind_rl_profile(
+                        ent_elm, in_ifname, egr_pfname, 'bind')
+    else:
+        # unbind profile
+        # remove profile (can not use add command to update profile, so remove it)
+        is_eg_ok = interface_bind_rl_profile(
+                        ent_elm, in_ifname, egr_pfname, 'unbind')
+        is_eg_ok = interface_set_rl_profile(ent_elm, egr_pfname, 'del', 0)
+
+    return is_eg_ok
+
+# for ingress ratelimit
+def interface_set_ingress_ratelimit(ent_elm, in_ifname, in_action, in_rate):
+    exe_cmd = CFG_TMPL_BIND_RLIMIT_IN.format(
+                act=in_action, ifname=in_ifname)
+
+    if in_action == 'add':
+        exe_cmd = exe_cmd + CFG_TMPL_BIND_RLIMIT_IN_OPT.format(
+                                mode='bytes', rate=in_rate)
+
+    exe_ok = util_utl.utl_execute_cmd(exe_cmd)
+    if not exe_ok:
+        util_method_tbl.mtbl_append_retmsg(ent_elm,
+            "Failed to {act} ingress ratelimit.".format(act=in_action))
 
     return exe_ok
 
 # ex: <entry><method>port-ratelimit</method><port>Ethernet1</port>
 #     <ingress>125000</ingress><egress /></entry>
+#     (in bytes)
 @util_utl.utl_dbg
 def interface_set_rate_limit(ent_elm, db_args):
     port_elm = ent_elm.find('port')
@@ -102,29 +161,24 @@ def interface_set_rate_limit(ent_elm, db_args):
     if None in [ port_elm, ing_elm, egr_elm, port_elm.text ]:
         util_method_tbl.mtbl_append_retmsg(ent_elm, 'WRONG PARAMETERS')
     else:
-        ing_pf_name = interface_get_rl_pfname(port_elm.text, 'ingress')
-        egr_pf_name = interface_get_rl_pfname(port_elm.text, 'egress' )
-
         is_in_ok = is_eg_ok = True
         if ing_elm.text == None:
             # unbind ingress
-            is_in_ok = interface_bind_rl_profile(
-                        ent_elm, port_elm.text, ing_pf_name, 'unbind', 'in')
+            is_in_ok = interface_set_ingress_ratelimit(
+                        ent_elm, port_elm.text, 'del', 0)
         else:
             # bind ingress
-            is_in_ok = interface_set_rl_profile(ent_elm, ing_pf_name, 'add', ing_elm.text)
-            is_in_ok = is_in_ok and interface_bind_rl_profile(
-                                        ent_elm, port_elm.text, ing_pf_name, 'bind', 'in')
+            is_in_ok = interface_set_ingress_ratelimit(
+                        ent_elm, port_elm.text, 'add', ing_elm.text)
 
         if egr_elm.text == None:
             # unbind egress
-            is_eg_ok = interface_bind_rl_profile(
-                        ent_elm, port_elm.text, egr_pf_name, 'unbind', 'out')
+            is_eg_ok = interface_set_egress_ratelimit(
+                        ent_elm, port_elm.text, 'del', 0)
         else:
             # bind egress
-            is_eg_ok = interface_set_rl_profile(ent_elm, egr_pf_name, 'add', egr_elm.text)
-            is_eg_ok = is_eg_ok and interface_bind_rl_profile(
-                                        ent_elm, port_elm.text, egr_pf_name, 'bind', 'out')
+            is_eg_ok = interface_set_egress_ratelimit(
+                        ent_elm, port_elm.text, 'add', egr_elm.text)
 
         if is_in_ok and is_eg_ok:
             util_method_tbl.mtbl_append_retmsg(ent_elm, 'SUCCESS')
