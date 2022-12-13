@@ -48,7 +48,8 @@ class XmppDaemon():
 
 def main(daemon_flag = True):
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--debug", action="store_true", help="emit debug messages")
+    parser.add_argument("-d", "--debug", action="count", default=0,
+                        help="emit debug messages")
     args = parser.parse_args()
 
     util_utl.utl_setup_log(daemon_flag, args.debug)

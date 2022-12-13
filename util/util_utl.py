@@ -71,6 +71,9 @@ CFG_TBL = {
 
 CFG_READY_CB_TBL = []
 
+# for trimming log message
+OLD_FACTORY = None
+
 def utl_is_flag_on(flg_name):
     return flg_name in DBG_FLG_TBL and DBG_FLG_TBL[flg_name] > 0
 
@@ -108,7 +111,8 @@ def utl_timeit(f):
             t_beg = time.time()
             result = f (*args, **kw)
             t_end = time.time()
-            utl_log("Time spent %s : %s %s" %  ((t_end - t_beg), f.__name__, args), logging.CRITICAL, 2)
+            utl_log("Time spent %s : %s %s" %
+                ((t_end - t_beg), f.__name__, args), logging.CRITICAL, 2)
         else:
             result = f (*args, **kw)
 
@@ -138,7 +142,8 @@ def utl_execute_cmd(exe_cmd):
 
     if returncode != 0:
         # if no decorator, use inspect.stack()[1][3] to get caller
-        utl_log("Failed to [%s] by %s !!! (%s)" % (exe_cmd, inspect.stack()[2][3], err), logging.ERROR)
+        utl_log("Failed to [%s] by %s !!! (%s)" %
+            (exe_cmd, inspect.stack()[2][3], err), logging.ERROR)
         return False
 
     return True
@@ -152,7 +157,8 @@ def utl_get_execute_cmd_output(exe_cmd):
 
     if returncode != 0:
         # if no decorator, use inspect.stack()[1][3] to get caller
-        utl_log("Failed to [%s] by %s !!!" % (exe_cmd, inspect.stack()[2][3]), logging.ERROR)
+        utl_log("Failed to [%s] by %s !!!" %
+            (exe_cmd, inspect.stack()[2][3]), logging.ERROR)
         return (False, None)
 
     return (True, output.decode('utf-8'))
@@ -227,11 +233,19 @@ def utl_setup_cfg(daemon_flag):
 
     utl_notify_cfg_ready()
 
+def utl_record_factory(*args, **kwargs):
+    record = OLD_FACTORY(*args, **kwargs) # get the unmodified record
+    # original msg : 'SEND: %s
+    if record.funcName == '_send_thread':
+        record.msg = 'SEND: %.240s ...'
+
+    return record
+
 def utl_setup_log(daemon_flag, debug_flag):
     log_path = ['./', LOG_DIR] [daemon_flag] + LOG_FILE
-    log_lvl  = [logging.INFO, logging.DEBUG] [debug_flag]
+    log_lvl  = [logging.INFO, logging.DEBUG] [debug_flag > 0]
 
-    if debug_flag:
+    if debug_flag > 0:
         # clear log file
         with open(log_path, 'w'):
             pass
@@ -245,3 +259,10 @@ def utl_setup_log(daemon_flag, debug_flag):
     handler.setFormatter(logging.Formatter(
                     fmt=LOG_FMT, datefmt=LOG_FMT_DATE))
     logging.getLogger().addHandler(handler)
+
+    # trimming log message of send_thread if flag < 2
+    if debug_flag < 2:
+        global OLD_FACTORY
+        OLD_FACTORY = logging.getLogRecordFactory()
+        logging.setLogRecordFactory(utl_record_factory)
+
