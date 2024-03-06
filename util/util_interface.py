@@ -226,26 +226,23 @@ def interface_setup_port_queue_map(db_args):
 
 # get inf status form appl db
 def interface_db_inf_status_get(db, inf_name, status_fld, fill_info):
-    pfx_tbl = { FILL_INFO_PC   : PC_STATUS_TABLE_PREFIX,                                                            FILL_INFO_PORT : PORT_STATUS_TABLE_PREFIX,                                                          FILL_INFO_VLAN : VLAN_STATUS_TABLE_PREFIX }
+    pfx_tbl = { FILL_INFO_PC   : PC_STATUS_TABLE_PREFIX,
+                FILL_INFO_PORT : PORT_STATUS_TABLE_PREFIX,
+                FILL_INFO_VLAN : VLAN_STATUS_TABLE_PREFIX }
 
     if fill_info in pfx_tbl:
         pfx = pfx_tbl[fill_info]
-    else:                                                                                                   return None
+    else:
+        return None
 
     full_table_id = pfx + inf_name
     status = db.get(db.APPL_DB, full_table_id, status_fld)
     return status
 
-# ex: ret = [ { "idx":"", "name":"", "type":"", "admin":"",
-#               "oper":"", "speed":"", "alias":"" } ]
-def interface_get_port_info_one(db_args, port_name):
-    fld_map = [ {"fld" : "index",           "tag" : "id"   },
-                {"fld" : PORT_ADMIN_STATUS, "tag" : "admin"},
-                {"fld" : PORT_OPER_STATUS,  "tag" : "oper" },
-                {"fld" : PORT_SPEED,        "tag" : "speed"},
-                {"fld" : PORT_ALIAS,        "tag" : "alias"} ]
+# ex: ret = { "idx":"", etc ... }
+def interface_get_port_info_one_by_fldmap(db_args, port_name, fld_map):
 
-    ret_val = { "name" :  port_name }
+    ret_val = {}
     for fld in fld_map:
         val = interface_db_inf_status_get(
                 db_args.appdb, port_name, fld["fld"], FILL_INFO_PORT)
@@ -253,6 +250,20 @@ def interface_get_port_info_one(db_args, port_name):
             ret_val[fld['tag']] = val
         else:
             ret_val[fld['tag']] = "unknown"
+
+    return ret_val
+
+# ex: ret = { "idx":"", "name":"", "type":"", "admin":"",
+#             "oper":"", "speed":"", "alias":"" }
+def interface_get_port_info_one(db_args, port_name):
+    fld_map = [ {"fld" : "index",           "tag" : "id"   },
+                {"fld" : PORT_ADMIN_STATUS, "tag" : "admin"},
+                {"fld" : PORT_OPER_STATUS,  "tag" : "oper" },
+                {"fld" : PORT_SPEED,        "tag" : "speed"},
+                {"fld" : PORT_ALIAS,        "tag" : "alias"} ]
+
+    ret_val = interface_get_port_info_one_by_fldmap(db_args, port_name, fld_map)
+    ret_val["name"] =  port_name
 
     # TODO: get type from state_db
     #       SFP/SFP+/NA
@@ -366,6 +377,19 @@ def interface_get_port_statis_one(db, inf_name, cntr_pname_map):
 
     return port_elm
 
+# return xml included in port_elm
+def interface_get_port_info_stis_one(db_args, port_name, port_elm):
+    fld_map = [ {"fld" : PORT_ADMIN_STATUS, "tag" : "admin"},
+                {"fld" : PORT_OPER_STATUS,  "tag" : "oper" },
+                {"fld" : PORT_SPEED,        "tag" : "speed"},
+                {"fld" : PORT_MTU_SIZE,     "tag" : "mtu"} ]
+
+    ret_val = interface_get_port_info_one_by_fldmap(db_args, port_name, fld_map)
+
+    for key in ret_val:
+        tmp_elm = ET.SubElement(port_elm, key)
+        tmp_elm.text = ret_val[key]
+
 def interface_get_port_statis(ent_elm, db_args):
     cntr_pname_map = db_args.cntrdb.get_all(db_args.cntrdb.COUNTERS_DB, COUNTERS_PORT_NAME_MAP)
 
@@ -382,6 +406,9 @@ def interface_get_port_statis(ent_elm, db_args):
 
             if inf_name and inf_name.startswith('Ethernet'):
                 ret_one = interface_get_port_statis_one(db_args.cntrdb, inf_name, cntr_pname_map)
+
+                # append port info to port statis element
+                interface_get_port_info_stis_one(db_args, inf_name, ret_one)
 
                 ports_elm.append(ret_one)
 
